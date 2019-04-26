@@ -1,0 +1,92 @@
+version: '2'
+# kresna global docker file
+
+services:
+    hhvm:
+        image: ralali/hhvm:3.24.8
+        restart: always
+        networks:
+          vpcbr:
+            ipv4_address: 10.10.0.7
+        volumes:
+            - ~/Workspace/www:/var/www
+        container_name: hhvm
+        extra_hosts:
+            - "ralali.local ralali.dev ralali api.ralali.local seller.ralali.local pim.ralali.local cms.ralali.local:10.10.0.2"
+            - "shorty.ralali.loc ralali.loc ralali.dev ralali api.ralali.loc seller.ralali.loc pim.ralali.loc cms.ralali.loc:10.10.0.2"
+    php70:
+        image: ribhy/php:70_3
+        restart: always
+        volumes:
+            - ~/Workspace/www:/var/www
+        links:
+            - redis
+            - mysql
+        networks:
+          vpcbr:
+            ipv4_address: 10.10.0.3
+        container_name: php70
+        extra_hosts:
+            - "ralali.local ralali.dev ralali api.ralali.local seller.ralali.local pim.ralali.local cms.ralali.local:10.10.0.2"
+            - "shorty.ralali.loc ralali.loc ralali.dev ralali api.ralali.loc seller.ralali.loc pim.ralali.loc cms.ralali.loc:10.10.0.2"
+    php72:
+        image: ribhy/php:72_1
+        restart: always
+        networks:
+          vpcbr:
+            ipv4_address: 10.10.0.4
+        volumes:
+            - ~/Workspace/www:/var/www
+        container_name: php72
+        extra_hosts:
+            - "ralali.local ralali.dev ralali api.ralali.local seller.ralali.local pim.ralali.local cms.ralali.local:10.10.0.2"
+            - "shorty.ralali.loc ralali.loc ralali.dev ralali api.ralali.loc seller.ralali.loc pim.ralali.loc cms.ralali.loc:10.10.0.2"
+    redis:
+        image: redis:3
+        restart: always
+        networks:
+          vpcbr:
+            ipv4_address: 10.10.0.5
+        command: redis-server --requirepass g4ngguw0ngturu
+        container_name: redis
+        volumes:
+            - ./data/redis:/data
+    mysql:
+        container_name: mysql
+        restart: always
+        image: mysql:5.7
+        environment:
+            MYSQL_ROOT_PASSWORD: 'b2bmarketplace' # TODO: Change this
+            MYSQL_USER: 'demo'
+            MYSQL_PASS: 'demo'
+        volumes:
+            - ./data/mysql:/var/lib/mysql
+        ports:
+            - "3306:3306"
+        networks:
+          vpcbr:
+            ipv4_address: 10.10.0.10
+    nginx:
+        image: ralali/nginx:latest
+        restart: always
+        ports:
+            - "80:80"
+        networks:
+          vpcbr:
+            ipv4_address: 10.10.0.2
+        volumes:
+            - ~/Workspace/www:/var/www
+            - ./ralali-dev.conf:/etc/nginx/conf.d/ralali-dev.conf
+        links:
+            - php70
+            - php72
+            - hhvm
+            - mysql
+        container_name: nginx
+networks:
+  vpcbr:
+    driver: bridge
+    ipam:
+     config:
+       - subnet: 10.10.0.0/16
+         gateway: 10.10.0.1
